@@ -24,12 +24,13 @@ def placing_numbers_in_block_coordinates(some_list, num):
         tet_table[indexes[0]][indexes[1]] = num
 
 
-# checking if there is a collision the figure with an obstacle in the next step
+# checking if there is a collision the figure with an obstacle on the next step
 def figures_overlap(f_list1, f_list2):
     overlap_is_present = False
     # f_list1 is the figure, f_list2 is the next step figure
     for k in range (4):
-        if tet_table[f_list1[k][0]][f_list1[k][1]] == 2 and tet_table[f_list2[k][0]][f_list2[k][1]] == 1:
+        if (tet_table[f_list1[k][0]][f_list1[k][1]] == 2 and tet_table[f_list2[k][0]][f_list2[k][1]] == 1) or \
+                (tet_table[f_list1[k][0]][f_list1[k][1]] == 1 and tet_table[f_list2[k][0]][f_list2[k][1]] == 2):
             overlap_is_present = True
             break
     return overlap_is_present
@@ -41,10 +42,17 @@ def real_time_matrix(initial_matrix, some_i, some_j):
     return real_time_m
 
 
-# rotates a figure for 90 deg clockwise
-def rotate_figure(some_indexes_list):
-    transformed_some_indexes_list = [[x[1], x[0] * (-1)] for x in some_indexes_list]
-    return transformed_some_indexes_list
+# rotates a config matrix. There are 4 rotation positions
+def rotate_matrix(some_config_matrix, rotation_number):
+    if rotation_number == 0:
+        transformed_matrix = [[x[0], x[1]] for x in some_config_matrix]
+    elif rotation_number == 1:
+        transformed_matrix = [[x[1], x[0] * (-1)] for x in some_config_matrix]
+    elif rotation_number == 2:
+        transformed_matrix = [[x[0] * (-1), x[1] * (-1)] for x in some_config_matrix]
+    elif rotation_number == 3:
+        transformed_matrix = [[x[1] * (-1), x[0]] for x in some_config_matrix]
+    return transformed_matrix
 
 
 # the number of blocks horizontally
@@ -91,34 +99,61 @@ class NumberBlock():
 class Block():
     def __init__(self):
         self.config_matrix = [[0, 0], [-1, 1], [0, 1], [1, 1]]
-        self.i = 1
-        self.j = 5
+        self.i = 1  # starting i position (row number)
+        self.j = 5  # starting j position (column number)
         self.indexes_list = real_time_matrix(self.config_matrix, self.i, self.j)
+        self.rot = 0
         self.stop = False
 
     def update(self):
         global tet_table
+
+        if rotation:
+            # checking if there is not collision on the next step
+            next_position = self.rot + 1
+            if next_position == 4:
+                next_position = 0
+            next_step_indexes_list = real_time_matrix(rotate_matrix(self.config_matrix, next_position), self.i, self.j)
+
+            if not figures_overlap(self.indexes_list, next_step_indexes_list):
+                # erasing previous figure
+                placing_numbers_in_block_coordinates(
+                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
+                self.rot += 1
+                if self.rot == 4:
+                    self.rot = 0
+
         if m_down and not self.stop:
+            # checking if there is not collision on the next step
             next_step_indexes_list = [[x[0] + 1, x[1]] for x in self.indexes_list]
             if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                placing_numbers_in_block_coordinates(self.indexes_list, 0)
+                # erasing previous figure
+                placing_numbers_in_block_coordinates(
+                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
                 self.i += 1
             else:
                 self.stop = True
 
         if m_left and not self.stop:
+            # checking if there is not collision on the next step
             next_step_indexes_list = [[x[0], x[1] - 1] for x in self.indexes_list]
             if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                placing_numbers_in_block_coordinates(self.indexes_list, 0)
+                # erasing previous figure
+                placing_numbers_in_block_coordinates(
+                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
                 self.j -= 1
 
         if m_right and not self.stop:
+            # checking if there is not collision on the next step
             next_step_indexes_list = [[x[0], x[1] + 1] for x in self.indexes_list]
             if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                placing_numbers_in_block_coordinates(self.indexes_list, 0)
+                # erasing previous figure
+                placing_numbers_in_block_coordinates(
+                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
                 self.j += 1
 
-        self.indexes_list = real_time_matrix(self.config_matrix, self.i, self.j)
+        self.indexes_list = real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j)
+
         if not self.stop:
             placing_numbers_in_block_coordinates(self.indexes_list, 2)
         else:
