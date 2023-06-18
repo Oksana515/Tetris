@@ -55,6 +55,19 @@ def rotate_matrix(some_config_matrix, rotation_number):
     return transformed_matrix
 
 
+def horizontal_movement(m, stop, sign, some_list, some_config_mat, rotate, some_i, some_j):
+    if m and not stop:
+        # checking if there is no collision on the next step
+        next_step_indexes_list = [[x[0], x[1] + sign * (-1)] for x in some_list]
+        if not figures_overlap(some_list, next_step_indexes_list):
+            # erasing previous figure
+            placing_numbers_in_block_coordinates(real_time_matrix(
+                rotate_matrix(some_config_mat, rotate), some_i, some_j), 0)
+            some_j += sign * (-1)
+
+    return some_j
+
+
 # the number of blocks horizontally
 nx_blocks = 10
 # the number of blocks vertically
@@ -75,27 +88,6 @@ m_down = False
 rotation = False
 
 
-# class of a single square block
-class NumberBlock():
-    def __init__(self):
-        self.i = 0
-        self.j = 4
-
-    def update(self):
-        for i in range(20):
-            for j in range(10):
-                if i == self.i and j == self.j:
-                    tet_table[i][j] = 1
-                else:
-                    tet_table[i][j] = 0
-        if m_down and not self.i >= 19:
-            self.i += 1
-        if m_left and not self.j <= 0:
-            self.j -= 1
-        if m_right and not self.j >= 9:
-            self.j += 1
-
-
 class Block():
     def __init__(self):
         self.config_matrix = [[0, 0], [-1, 1], [0, 1], [1, 1]]
@@ -104,12 +96,15 @@ class Block():
         self.indexes_list = real_time_matrix(self.config_matrix, self.i, self.j)
         self.rot = 0
         self.stop = False
+        self.current_ticks = 0
 
     def update(self):
-        global tet_table
+        global tet_table, m_down, m_left, m_right, rotation
+
+        m_down = True
 
         if rotation:
-            # checking if there is not collision on the next step
+            # checking if there is no collision on the next step
             next_position = self.rot + 1
             if next_position == 4:
                 next_position = 0
@@ -123,34 +118,24 @@ class Block():
                 if self.rot == 4:
                     self.rot = 0
 
+        self.j = horizontal_movement(m_left, self.stop, 1, self.indexes_list, self.config_matrix, self.rot, self.i,
+                                     self.j)
+        self.j = horizontal_movement(m_right, self.stop, -1, self.indexes_list, self.config_matrix, self.rot, self.i,
+                                     self.j)
+
         if m_down and not self.stop:
-            # checking if there is not collision on the next step
-            next_step_indexes_list = [[x[0] + 1, x[1]] for x in self.indexes_list]
-            if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                # erasing previous figure
-                placing_numbers_in_block_coordinates(
-                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
-                self.i += 1
-            else:
-                self.stop = True
-
-        if m_left and not self.stop:
-            # checking if there is not collision on the next step
-            next_step_indexes_list = [[x[0], x[1] - 1] for x in self.indexes_list]
-            if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                # erasing previous figure
-                placing_numbers_in_block_coordinates(
-                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
-                self.j -= 1
-
-        if m_right and not self.stop:
-            # checking if there is not collision on the next step
-            next_step_indexes_list = [[x[0], x[1] + 1] for x in self.indexes_list]
-            if not figures_overlap(self.indexes_list, next_step_indexes_list):
-                # erasing previous figure
-                placing_numbers_in_block_coordinates(
-                    real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
-                self.j += 1
+            seconds = (pygame.time.get_ticks() - self.current_ticks) / 1000
+            if seconds > 1:
+                self.current_ticks = pygame.time.get_ticks()
+                # checking if there is no collision on the next step
+                next_step_indexes_list = [[x[0] + 1, x[1]] for x in self.indexes_list]
+                if not figures_overlap(self.indexes_list, next_step_indexes_list):
+                    # erasing previous figure
+                    placing_numbers_in_block_coordinates(
+                        real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j), 0)
+                    self.i += 1
+                else:
+                    self.stop = True
 
         self.indexes_list = real_time_matrix(rotate_matrix(self.config_matrix, self.rot), self.i, self.j)
 
@@ -160,8 +145,10 @@ class Block():
             placing_numbers_in_block_coordinates(self.indexes_list, 1)
 
 
-block = NumberBlock()
 teewee = Block()
+updating_figure_position = pygame.USEREVENT + 0
+pygame.time.set_timer(updating_figure_position, 600)
+start_ticks = pygame.time.get_ticks()  # starter tick
 
 run = True
 
@@ -180,7 +167,6 @@ while run:
             elif tet_table[k][m] == 1:
                 draw_text(f"{tet_table[k][m]}", my_font, (0, 120, 230), 160 + m * 23, 100 + k * 25)
 
-    # updating the position of a figure
     teewee.update()
 
     # keys determination
