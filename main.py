@@ -10,6 +10,9 @@ W = 600
 H = 800
 screen = pygame.display.set_mode((W, H))
 
+# list of figure's configuration matrices
+cf_m_list = [cf_m1, cf_m2, cf_m3, cf_m4, cf_m5, cf_m6, cf_m7]
+
 # defining a font
 my_font = pygame.font.SysFont('Arial', 22)
 
@@ -78,8 +81,8 @@ rotation = False
 
 
 class Block():
-    def __init__(self):
-        self.config_matrix = cf_m7
+    def __init__(self, matrix):
+        self.config_matrix = matrix
         self.i = 0  # starting i position (row number)
         self.j = 5  # starting j position (column number)
         self.indexes_list = real_time_matrix(self.config_matrix, self.i, self.j)
@@ -135,7 +138,7 @@ class Block():
             placing_numbers_in_block_coordinates(self.indexes_list, 1)
 
 
-figure = Block()
+figure = Block(cf_m_list[1])
 updating_figure_position = pygame.USEREVENT + 0
 pygame.time.set_timer(updating_figure_position, 600)
 start_ticks = pygame.time.get_ticks()  # starter tick
