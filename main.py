@@ -1,4 +1,6 @@
 import pygame
+from rotation import rotate_matrix
+from configuration_matrices import cf_m1, cf_m2, cf_m3, cf_m4, cf_m5, cf_m6, cf_m7
 
 pygame.init()
 
@@ -42,19 +44,6 @@ def real_time_matrix(initial_matrix, some_i, some_j):
     return real_time_m
 
 
-# rotates a config matrix. There are 4 rotation positions
-def rotate_matrix(some_config_matrix, rotation_number):
-    if rotation_number == 0:
-        transformed_matrix = [[x[0], x[1]] for x in some_config_matrix]
-    elif rotation_number == 1:
-        transformed_matrix = [[x[1], x[0] * (-1)] for x in some_config_matrix]
-    elif rotation_number == 2:
-        transformed_matrix = [[x[0] * (-1), x[1] * (-1)] for x in some_config_matrix]
-    elif rotation_number == 3:
-        transformed_matrix = [[x[1] * (-1), x[0]] for x in some_config_matrix]
-    return transformed_matrix
-
-
 def horizontal_movement(m, stop, sign, some_list, some_config_mat, rotate, some_i, some_j):
     if m and not stop:
         # checking if there is no collision on the next step
@@ -90,8 +79,8 @@ rotation = False
 
 class Block():
     def __init__(self):
-        self.config_matrix = [[0, 0], [-1, 1], [0, 1], [1, 1]]
-        self.i = 1  # starting i position (row number)
+        self.config_matrix = cf_m7
+        self.i = 0  # starting i position (row number)
         self.j = 5  # starting j position (column number)
         self.indexes_list = real_time_matrix(self.config_matrix, self.i, self.j)
         self.rot = 0
@@ -124,8 +113,9 @@ class Block():
                                      self.j)
 
         if m_down and not self.stop:
-            seconds = (pygame.time.get_ticks() - self.current_ticks) / 1000
-            if seconds > 1:
+            milliseconds = (pygame.time.get_ticks() - self.current_ticks)
+            # number of seconds regulates the velocity of the figure
+            if milliseconds > 1000:
                 self.current_ticks = pygame.time.get_ticks()
                 # checking if there is no collision on the next step
                 next_step_indexes_list = [[x[0] + 1, x[1]] for x in self.indexes_list]
@@ -145,7 +135,7 @@ class Block():
             placing_numbers_in_block_coordinates(self.indexes_list, 1)
 
 
-teewee = Block()
+figure = Block()
 updating_figure_position = pygame.USEREVENT + 0
 pygame.time.set_timer(updating_figure_position, 600)
 start_ticks = pygame.time.get_ticks()  # starter tick
@@ -167,7 +157,7 @@ while run:
             elif tet_table[k][m] == 1:
                 draw_text(f"{tet_table[k][m]}", my_font, (0, 120, 230), 160 + m * 23, 100 + k * 25)
 
-    teewee.update()
+    figure.update()
 
     # keys determination
     for event in pygame.event.get():
